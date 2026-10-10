@@ -663,3 +663,93 @@ input[type="search"] {
   background: #ed102b !important;
   border-color: #ed102b !important;
 }
+
+/* CineVerse OMDb search enhancements */
+
+.cv-live-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(760px, 100%);
+  margin: 0 auto 36px;
+  padding: 8px 9px 8px 16px;
+  color: #999;
+  background: #111;
+  border: 1px solid #303030;
+  border-radius: 9px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.cv-live-search:focus-within {
+  border-color: #e50914;
+  box-shadow: 0 0 0 3px rgb(229 9 20 / 12%);
+}
+
+.cv-live-search input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 0;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 0.92rem;
+}
+
+.cv-live-search input::placeholder {
+  color: #777;
+}
+
+.cv-live-search button {
+  padding: 11px 18px;
+  color: #fff;
+  background: #e50914;
+  border: 0;
+  border-radius: 6px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.cv-live-search button:hover {
+  background: #ff2833;
+}
+
+.cv-live-search button:focus-visible,
+.cv-category-tabs button:focus-visible,
+.cv-rail-card:focus-visible {
+  outline: 2px solid #ff555d;
+  outline-offset: 3px;
+}
+
+.cv-rail-poster img[src=""],
+.cv-rail-poster img:not([src]) {
+  display: none;
+}
+
+.cv-attribution {
+  max-width: 850px;
+  margin: 35px auto 0;
+  text-align: center;
+  color: #777;
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+
+@media (max-width: 480px) {
+  .cv-live-search {
+    gap: 8px;
+    padding-left: 11px;
+  }
+
+  .cv-live-search input {
+    font-size: 0.82rem;
+  }
+
+  .cv-live-search button {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+  }
+}

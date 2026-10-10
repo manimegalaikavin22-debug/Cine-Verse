@@ -1,4 +1,3 @@
-
 import MovieCard from "./MovieCard";
 
 export default function MovieGrid({
@@ -35,7 +34,7 @@ export default function MovieGrid({
     <div className="movie-grid">
       {movies.map((movie) => (
         <MovieCard
-          key={movie.id}
+          key={movie.imdbID || movie.id}
           movie={movie}
           onOpen={onOpen}
         />

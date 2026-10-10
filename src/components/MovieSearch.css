@@ -1,0 +1,250 @@
+.cine-search {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 36px 24px 56px;
+  color: #f7f7f8;
+}
+
+.cine-search-heading {
+  margin-bottom: 28px;
+}
+
+.cine-search-eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: #f04452;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+}
+
+.cine-search-heading h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 800;
+  letter-spacing: -1.8px;
+  line-height: 1.15;
+}
+
+.cine-search-heading h1 span {
+  color: #f04452;
+}
+
+.cine-search-heading p {
+  margin: 12px 0 0;
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cine-search-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 66px;
+  padding: 9px 10px 9px 20px;
+  background: #151519;
+  border: 1px solid #303036;
+  border-radius: 14px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.cine-search-form:focus-within {
+  border-color: #f04452;
+  box-shadow: 0 0 0 3px rgb(240 68 82 / 10%);
+}
+
+.cine-search-icon {
+  flex-shrink: 0;
+  color: #a1a1aa;
+}
+
+.cine-search-form input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+}
+
+.cine-search-form input::placeholder {
+  color: #71717a;
+}
+
+.cine-search-form input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.cine-search-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 22px;
+  color: #ffffff;
+  background: #e63946;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.cine-search-button:hover:not(:disabled) {
+  background: #ff4c59;
+  transform: translateY(-1px);
+}
+
+.cine-search-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.cine-search-clear {
+  display: grid;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: #a1a1aa;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.cine-search-clear:hover {
+  color: #ffffff;
+  background: #29292f;
+}
+
+.cine-search-spinner {
+  animation: cine-search-rotate 900ms linear infinite;
+}
+
+@keyframes cine-search-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cine-search-message {
+  margin: 16px 0;
+  color: #a1a1aa;
+  font-size: 13px;
+}
+
+.cine-search-message.is-error {
+  color: #ff737d;
+}
+
+.cine-search-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 150px;
+  color: #c4c4cc;
+  font-size: 14px;
+}
+
+.cine-search-results {
+  margin-top: 34px;
+}
+
+.cine-search-results-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.cine-search-results-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 750;
+}
+
+.cine-search-results-heading p {
+  margin: 7px 0 0;
+  color: #a1a1aa;
+  font-size: 13px;
+}
+
+.cine-search-results-heading strong {
+  color: #eeeeef;
+}
+
+.cine-search-reset {
+  padding: 9px 13px;
+  color: #e5e5e8;
+  background: #202025;
+  border: 1px solid #36363d;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cine-search-reset:hover {
+  background: #2b2b32;
+}
+
+.cine-search-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 12px;
+  color: #85858f;
+  font-size: 13px;
+}
+
+.cine-search-hint svg {
+  color: #e04450;
+}
+
+@media (max-width: 600px) {
+  .cine-search {
+    padding: 26px 14px 40px;
+  }
+
+  .cine-search-heading h1 {
+    letter-spacing: -1px;
+  }
+
+  .cine-search-form {
+    gap: 8px;
+    min-height: 58px;
+    padding: 7px 7px 7px 12px;
+  }
+
+  .cine-search-form input {
+    font-size: 12px;
+  }
+
+  .cine-search-button {
+    gap: 5px;
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .cine-search-results-heading {
+    align-items: flex-start;
+  }
+
+  .cine-search-results-heading h2 {
+    font-size: 19px;
+  }
+}

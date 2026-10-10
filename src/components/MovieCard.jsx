@@ -1,6 +1,11 @@
-
-import { Heart, BookmarkPlus, Check, Star } from "lucide-react";
-import { imageUrl, genres } from "../api";
+import { useState } from "react";
+import {
+  Heart,
+  BookmarkPlus,
+  Check,
+  Star,
+  Clapperboard,
+} from "lucide-react";
 import { useCollection } from "../CollectionContext";
 
 export default function MovieCard({ movie, onOpen }) {
@@ -13,87 +18,132 @@ export default function MovieCard({ movie, onOpen }) {
     toggleWatched,
   } = useCollection();
 
-  const genreNames = (movie.genre_ids || [])
-    .map((id) => genres.find((genre) => genre.id === id)?.name)
-    .filter(Boolean)
-    .slice(0, 2);
+  const movieId = movie.imdbID || movie.id;
+  const title = movie.title || movie.Title || "Untitled movie";
+
+  const poster =
+    movie.poster_path ||
+    (movie.Poster && movie.Poster !== "N/A" ? movie.Poster : "");
+
+  const rating =
+    movie.imdbRating && movie.imdbRating !== "N/A"
+      ? movie.imdbRating
+      : movie.vote_average;
+
+  const year =
+    movie.year ||
+    movie.Year ||
+    movie.release_date?.slice(0, 4) ||
+    "";
+
+  const [imageFailed, setImageFailed] = useState(false);
+
+  const genreNames = Array.isArray(movie.genres)
+    ? movie.genres
+        .map((genre) =>
+          typeof genre === "string" ? genre : genre?.name
+        )
+        .filter(Boolean)
+        .slice(0, 2)
+    : typeof movie.Genre === "string"
+      ? movie.Genre.split(",").map((genre) => genre.trim()).slice(0, 2)
+      : [];
+
+  function openMovie() {
+    if (onOpen) onOpen(movie);
+  }
+
+  function handleAction(event, action) {
+    event.stopPropagation();
+    action(movie);
+  }
+
+  const favorite = isFavorite(movieId);
+  const inWatchlist = isInWatchlist(movieId);
+  const watched = isWatched(movieId);
 
   return (
     <article className="movie-card">
       <button
+        type="button"
         className="poster-button"
-        onClick={() => onOpen(movie)}
-        aria-label={`View ${movie.title}`}
+        onClick={openMovie}
+        aria-label={`View details for ${title}`}
       >
-        {movie.poster_path ? (
+        {poster && !imageFailed ? (
           <img
-            src={imageUrl(movie.poster_path)}
-            alt={`${movie.title} poster`}
+            src={poster}
+            alt={`${title} poster`}
             loading="lazy"
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <div className="poster-placeholder">
-            <span>🎬</span>
-            <strong>{movie.title}</strong>
+            <Clapperboard size={32} />
+            <strong>{title}</strong>
+            <span>Poster unavailable</span>
           </div>
         )}
 
         <span className="poster-rating">
           <Star size={12} fill="currentColor" />
-          {movie.vote_average
-            ? Number(movie.vote_average).toFixed(1)
+          {rating && rating !== "N/A" && Number(rating) > 0
+            ? Number(rating).toFixed(1)
             : "N/A"}
         </span>
 
-        {movie.release_date && (
-          <span className="new-ribbon">NEW</span>
-        )}
+        {year && <span className="new-ribbon">{year}</span>}
       </button>
 
       <div className="movie-card-info">
-        <button className="movie-title" onClick={() => onOpen(movie)}>
-          {movie.title}
+        <button
+          type="button"
+          className="movie-title"
+          onClick={openMovie}
+          title={`View ${title} details`}
+        >
+          {title}
         </button>
+
         <span className="movie-genre">
-          {genreNames.join(" / ") || "Film"}
+          {genreNames.join(" / ") || "Movie"}
         </span>
-        <span className="movie-year">
-          {(movie.release_date || "").slice(0, 4) || "Year unknown"}
-        </span>
+
+        <span className="movie-year">{year || "Year unknown"}</span>
 
         <div className="card-actions">
           <button
-            className={`small-action ${
-              isFavorite(movie.id) ? "active" : ""
-            }`}
-            onClick={() => toggleFavorite(movie)}
-            aria-label="Toggle favorite"
-            title="Favorite"
+            type="button"
+            className={`small-action ${favorite ? "active" : ""}`}
+            onClick={(event) =>
+              handleAction(event, toggleFavorite)
+            }
+            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+            title={favorite ? "Remove favorite" : "Add to favorites"}
           >
-            <Heart
-              size={15}
-              fill={isFavorite(movie.id) ? "currentColor" : "none"}
-            />
+            <Heart size={15} fill={favorite ? "currentColor" : "none"} />
           </button>
 
           <button
-            className={`small-action ${
-              isInWatchlist(movie.id) ? "active" : ""
-            }`}
-            onClick={() => toggleWatchlist(movie)}
-            aria-label="Toggle watchlist"
-            title="Watch later"
+            type="button"
+            className={`small-action ${inWatchlist ? "active" : ""}`}
+            onClick={(event) =>
+              handleAction(event, toggleWatchlist)
+            }
+            aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+            title={inWatchlist ? "Remove from watchlist" : "Watch later"}
           >
             <BookmarkPlus size={15} />
           </button>
 
           <button
-            className={`small-action ${
-              isWatched(movie.id) ? "active" : ""
-            }`}
-            onClick={() => toggleWatched(movie)}
-            aria-label="Toggle watched"
-            title="Watched"
+            type="button"
+            className={`small-action ${watched ? "active" : ""}`}
+            onClick={(event) =>
+              handleAction(event, toggleWatched)
+            }
+            aria-label={watched ? "Mark as unwatched" : "Mark as watched"}
+            title={watched ? "Mark as unwatched" : "Mark as watched"}
           >
             <Check size={15} />
           </button>

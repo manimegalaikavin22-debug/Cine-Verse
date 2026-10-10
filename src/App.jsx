@@ -11,6 +11,7 @@ import {
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import MovieModal from "./components/MovieModal";
+import MovieDetails from "./pages/MovieDetails";
 
 import Discover from "./pages/Discover";
 import Trending from "./pages/Trending";
@@ -20,6 +21,7 @@ import Watched from "./pages/Watched";
 
 import { CollectionProvider } from "./CollectionContext";
 import "./App.css";
+import Search from "./pages/Search";
 
 function AppContent() {
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -47,11 +49,13 @@ function AppContent() {
           path="/"
           element={<Discover query="" onOpen={openMovie} />}
         />
+        <Route path="/movie/:id" element={<MovieDetails />} />
 
         <Route
           path="/discover"
           element={<Discover query={query} onOpen={openMovie} />}
         />
+        <Route path="/search" element={<Search />} />
 
         <Route
           path="/trending"

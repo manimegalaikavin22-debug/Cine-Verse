@@ -2,128 +2,71 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
-  ChevronRight,
+  Clapperboard,
   Flame,
   Play,
+  Search,
   Sparkles,
   Star,
   TrendingUp,
   WandSparkles,
+  ChevronRight,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+
 import {
-  demoMovies,
-  genres,
-  getMovies,
+  GENRES,
+  getMovieCollections,
+  getSuggestions,
   searchMovies,
-  imageUrl,
-} from "../api";
+} from "../services/omdb";
+
 import MovieGrid from "../components/MovieGrid";
 
 const categories = [
-  { id: "popular", label: "Popular", endpoint: "movie/popular" },
-  { id: "top", label: "Top Rated", endpoint: "movie/top_rated" },
-  { id: "new", label: "New Releases", endpoint: "movie/now_playing" },
-  { id: "upcoming", label: "Coming Soon", endpoint: "movie/upcoming" },
+  { id: "popular", label: "Popular" },
+  { id: "topRated", label: "Critically Acclaimed" },
+  { id: "animation", label: "Animation" },
+  { id: "sciFi", label: "Sci-Fi" },
+  { id: "fantasy", label: "Fantasy" },
+  { id: "thriller", label: "Thrillers" },
+  { id: "comedy", label: "Comedy" },
 ];
 
-const harryPotter = [
-  {
-    id: 1001,
-    title: "Harry Potter and the Philosopher's Stone",
-    release_date: "2001-11-16",
-    vote_average: 7.9,
-    genre_ids: [12, 14],
-    poster_path: "/wuMc08IPKEatf9rnMNXvIDxqP4W.jpg",
-    overview:
-      "A young wizard discovers a magical world and begins his first year at Hogwarts.",
-  },
-  {
-    id: 1002,
-    title: "Harry Potter and the Chamber of Secrets",
-    release_date: "2002-11-15",
-    vote_average: 7.7,
-    genre_ids: [12, 14],
-    poster_path: "/sdEOH0992YZ0QSxgXNIGLq1ToUi.jpg",
-    overview:
-      "Harry returns to Hogwarts as a mysterious force threatens the students.",
-  },
-  {
-    id: 1003,
-    title: "Harry Potter and the Prisoner of Azkaban",
-    release_date: "2004-05-31",
-    vote_average: 8.0,
-    genre_ids: [12, 14],
-    poster_path: "/aWxwnYoe8p2d2fcxOqtvAtJ72Rw.jpg",
-    overview:
-      "Harry faces a mystery connected to a dangerous escaped prisoner.",
-  },
-  {
-    id: 1004,
-    title: "Harry Potter and the Goblet of Fire",
-    release_date: "2005-11-18",
-    vote_average: 7.8,
-    genre_ids: [12, 14],
-    poster_path: "/fECBtHlr0RB3foNHDiCBXeg9Bv9.jpg",
-    overview:
-      "Harry unexpectedly enters a dangerous magical tournament.",
-  },
-  {
-    id: 1005,
-    title: "Harry Potter and the Order of the Phoenix",
-    release_date: "2007-07-11",
-    vote_average: 7.7,
-    genre_ids: [12, 14],
-    poster_path: "/5aOyriWkPec0zUDxmHFP9qMmBaj.jpg",
-    overview:
-      "Harry and his friends prepare to face a growing dark threat.",
-  },
-  {
-    id: 1006,
-    title: "Harry Potter and the Half-Blood Prince",
-    release_date: "2009-07-15",
-    vote_average: 7.7,
-    genre_ids: [12, 14],
-    poster_path: "/z7uo9ghw5gtfOfCfxk3lLXvcf2e.jpg",
-    overview:
-      "Harry learns more about Voldemort's past as danger approaches Hogwarts.",
-  },
-  {
-    id: 1007,
-    title: "Harry Potter and the Deathly Hallows: Part 1",
-    release_date: "2010-11-19",
-    vote_average: 7.8,
-    genre_ids: [12, 14],
-    poster_path: "/iGoXIpQb7Pot00EEdwpwPajheZ5.jpg",
-    overview:
-      "Harry, Ron, and Hermione leave Hogwarts to search for a way to defeat Voldemort.",
-  },
-  {
-    id: 1008,
-    title: "Harry Potter and the Deathly Hallows: Part 2",
-    release_date: "2011-07-15",
-    vote_average: 8.1,
-    genre_ids: [12, 14],
-    poster_path: "/n5A7brJCnoj8n2vo8pZJ4sW5zHo.jpg",
-    overview:
-      "The final battle for the wizarding world begins at Hogwarts.",
-  },
-];
+const normalize = (movie) => ({
+  ...movie,
+  id: movie.imdbID || movie.id,
+  imdbID: movie.imdbID || movie.id,
+  title: movie.title || movie.Title || "Untitled movie",
+  year: movie.year || movie.Year || "",
+  release_date:
+    movie.release_date ||
+    (movie.Year ? `${movie.Year}-01-01` : ""),
+  vote_average: Number(movie.vote_average || movie.imdbRating || 0),
+  poster_path: movie.poster_path || movie.Poster || "",
+  overview: movie.overview || movie.Plot || "",
+  type: movie.type || movie.Type || "movie",
+});
+
+function dedupe(movies = []) {
+  const seen = new Set();
+
+  return movies.map(normalize).filter((movie) => {
+    if (!movie.id || seen.has(movie.id)) return false;
+    seen.add(movie.id);
+    return true;
+  });
+}
 
 function MovieRail({ title, subtitle, icon: Icon, movies, onOpen }) {
-  const uniqueMovies = movies.filter(
-    (movie, index, array) =>
-      movie && movie.id != null &&
-      array.findIndex((item) => item?.id === movie.id) === index
-  );
+  const items = dedupe(movies);
 
   return (
     <section className="cv-rail-section">
       <div className="cv-rail-heading">
         <div>
           <span className="cv-rail-kicker">
-            <Icon size={14} />
-            {subtitle}
+            <Icon size={14} /> {subtitle}
           </span>
           <h2>{title}</h2>
         </div>
@@ -134,300 +77,427 @@ function MovieRail({ title, subtitle, icon: Icon, movies, onOpen }) {
       </div>
 
       <div className="cv-movie-rail">
-        {uniqueMovies.map((movie) => {
-          const poster = imageUrl(movie.poster_path);
+        {items.map((movie) => (
+          <button
+            type="button"
+            className="cv-rail-card"
+            key={movie.id}
+            onClick={() => onOpen(movie)}
+          >
+            <div className="cv-rail-poster">
+              {movie.poster_path ? (
+                <img
+                  src={movie.poster_path}
+                  alt={`${movie.title} poster`}
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="cv-poster-fallback">
+                  <Clapperboard size={28} />
+                  <span>{movie.title}</span>
+                </div>
+              )}
 
-          return (
-            <button
-              type="button"
-              className="cv-rail-card"
-              key={movie.id}
-              onClick={() => onOpen(movie)}
-            >
-              <div className="cv-rail-poster">
-                {poster ? (
-                  <img
-                    src={poster}
-                    alt={`${movie.title} poster`}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="cv-poster-fallback">
-                    <Play size={28} />
-                    <span>{movie.title}</span>
-                  </div>
-                )}
-
-                <span className="cv-rail-rating">
-                  <Star size={12} fill="currentColor" />
-                  {Number(movie.vote_average || 0).toFixed(1)}
-                </span>
-
-                <span className="cv-rail-play">
-                  <Play size={19} fill="currentColor" />
-                </span>
-              </div>
-
-              <strong title={movie.title}>{movie.title}</strong>
-
-              <span className="cv-rail-meta">
-                {(movie.release_date || "").slice(0, 4) || "Year unknown"}
-                <i>•</i>
-                Movie
+              <span className="cv-rail-rating">
+                <Star size={12} fill="currentColor" />
+                {movie.vote_average
+                  ? movie.vote_average.toFixed(1)
+                  : "N/A"}
               </span>
-            </button>
-          );
-        })}
+
+              <span className="cv-rail-play">
+                <Play size={19} fill="currentColor" />
+              </span>
+            </div>
+
+            <strong title={movie.title}>{movie.title}</strong>
+
+            <span className="cv-rail-meta">
+              {movie.year || movie.release_date?.slice(0, 4) || "Year unknown"}
+              <i>•</i>
+              {movie.type || "Movie"}
+            </span>
+          </button>
+        ))}
       </div>
     </section>
   );
 }
 
-export default function Discover({ query = "", onOpen }) {
-  const [movies, setMovies] = useState(demoMovies);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [category, setCategory] = useState("popular");
-  const [genre, setGenre] = useState("all");
+function SearchSuggestions({ initialValue = "", onSearch }) {
+  const [value, setValue] = useState(initialValue);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  function submit(event) {
+    event.preventDefault();
+    onSearch(value.trim());
+  }
+
+  return (
+    <form className="cv-live-search" onSubmit={submit}>
+      <Search size={19} />
+
+      <input
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        placeholder="Search movies, actors, or titles..."
+        aria-label="Search movies"
+      />
+
+      <button type="submit">Search</button>
+    </form>
+  );
+}
+
+export default function Discover({ onOpen }) {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlQuery = searchParams.get("q") || "";
+
+  const [collections, setCollections] = useState({});
+  const [movies, setMovies] = useState([]);
+  const [selectedGenre, setSelectedGenre] = useState("Action");
+  const [genreMovies, setGenreMovies] = useState([]);
+  const [activeCategory, setActiveCategory] = useState("popular");
   const [sort, setSort] = useState("popular");
+  const [loading, setLoading] = useState(true);
+  const [genreLoading, setGenreLoading] = useState(false);
+  const [error, setError] = useState("");
   const [showAll, setShowAll] = useState(false);
 
+  // Clicking any movie card opens its full details page.
+  function openMovie(movie) {
+    if (onOpen) {
+      onOpen(movie);
+      return;
+    }
+
+    const movieId = movie?.imdbID || movie?.id;
+
+    if (movieId) {
+      navigate(`/movie/${encodeURIComponent(movieId)}`);
+    }
+  }
+
+  // Put the search term in the URL so it can be refreshed or shared.
+  function handleSearch(term) {
+    const cleaned = term.trim();
+
+    setShowAll(false);
+    setError("");
+
+    if (cleaned) {
+      setSearchParams({ q: cleaned });
+    } else {
+      setSearchParams({});
+    }
+  }
+
+  // Load collections once.
   useEffect(() => {
     let active = true;
 
-    async function loadMovies() {
+    async function loadCollections() {
       setLoading(true);
       setError("");
 
       try {
-        const data = query.trim()
-          ? await searchMovies(query.trim())
-          : await getMovies(
-              categories.find((item) => item.id === category)?.endpoint ||
-                "movie/popular"
-            );
+        const data = await getMovieCollections();
 
-        if (active && Array.isArray(data) && data.length) {
-          setMovies(data);
-        } else if (active) {
-          setMovies(demoMovies);
-        }
-      } catch {
+        if (!active) return;
+
+        setCollections(data);
+        setMovies(data.popular?.movies || []);
+      } catch (err) {
         if (active) {
-          setError("Live movies are unavailable. Showing sample movies instead.");
-          setMovies(demoMovies);
+          setError(err.message || "Could not load movie collections.");
         }
       } finally {
         if (active) setLoading(false);
       }
     }
 
-    loadMovies();
+    loadCollections();
 
     return () => {
       active = false;
     };
-  }, [query, category]);
+  }, []);
+
+  // Load suggestions for the selected genre.
+  useEffect(() => {
+    let active = true;
+
+    async function loadGenreSuggestions() {
+      setGenreLoading(true);
+
+      try {
+        const data = await getSuggestions({
+          genre: selectedGenre,
+          limit: 30,
+        });
+
+        if (active) setGenreMovies(dedupe(data));
+      } catch {
+        if (active) setGenreMovies([]);
+      } finally {
+        if (active) setGenreLoading(false);
+      }
+    }
+
+    loadGenreSuggestions();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedGenre]);
+
+  // Search the OMDb API when the URL query changes.
+  useEffect(() => {
+    let active = true;
+    const term = urlQuery.trim();
+
+    async function loadResults() {
+      if (!term) {
+        setError("");
+        setMovies(collections[activeCategory]?.movies || []);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const results = await searchMovies(term, 1);
+
+        if (!active) return;
+
+        setMovies(dedupe(results));
+        setShowAll(false);
+      } catch (err) {
+        if (!active) return;
+
+        setMovies([]);
+        setError(err.message || "Search failed. Please try again.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadResults();
+
+    return () => {
+      active = false;
+    };
+  }, [urlQuery, activeCategory, collections]);
 
   const visibleMovies = useMemo(() => {
-    let result = movies.filter((movie) =>
-      genre === "all"
-        ? true
-        : (movie.genre_ids || []).includes(Number(genre))
-    );
+    const result = dedupe(movies);
 
     if (sort === "rating") {
-      result = [...result].sort(
-        (a, b) => (b.vote_average || 0) - (a.vote_average || 0)
-      );
+      result.sort((a, b) => b.vote_average - a.vote_average);
     } else if (sort === "newest") {
-      result = [...result].sort((a, b) =>
-        (b.release_date || "").localeCompare(a.release_date || "")
+      result.sort((a, b) =>
+        String(b.year || b.release_date || "").localeCompare(
+          String(a.year || a.release_date || "")
+        )
       );
     } else if (sort === "az") {
-      result = [...result].sort((a, b) =>
-        a.title.localeCompare(b.title)
-      );
+      result.sort((a, b) => a.title.localeCompare(b.title));
     }
 
     return result;
-  }, [movies, genre, sort]);
+  }, [movies, sort]);
 
-  const featured = movies.find((movie) => movie.backdrop_path) || demoMovies[0];
-  const backdrop = imageUrl(featured?.backdrop_path, "original");
+  const featured =
+    collections.topRated?.movies?.[0] ||
+    collections.popular?.movies?.[0] ||
+    genreMovies[0];
 
-  const allMovies = [...movies, ...demoMovies, ...harryPotter].filter(
-    (movie, index, array) =>
-      movie && movie.id != null &&
-      array.findIndex((item) => item?.id === movie.id) === index
-  );
+  const featuredPoster = featured?.poster_path;
 
-  const topRated = [...allMovies].sort(
-    (a, b) => (b.vote_average || 0) - (a.vote_average || 0)
-  );
-
-  const newest = [...allMovies].sort((a, b) =>
-    (b.release_date || "").localeCompare(a.release_date || "")
-  );
-
-  if (query.trim()) {
-    return (
-      <main className="page-shell inner-page">
-        <div className="page-intro">
-          <span className="cv-rail-kicker">CINEVERSE SEARCH</span>
-          <h1>Search results<span className="cv-red-dot">.</span></h1>
-          <p>Results for “{query}”</p>
-        </div>
-
-        <div className="cv-filter-row">
-          <select
-            value={genre}
-            onChange={(event) => setGenre(event.target.value)}
-            aria-label="Filter by genre"
-          >
-            <option value="all">All genres</option>
-            {genres.map((item) => (
-              <option key={item.id} value={String(item.id)}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value)}
-            aria-label="Sort results"
-          >
-            <option value="popular">Default order</option>
-            <option value="rating">Highest rated</option>
-            <option value="newest">Newest first</option>
-            <option value="az">A–Z</option>
-          </select>
-        </div>
-
-        {error && <div className="notice">{error}</div>}
-
-        <MovieGrid
-          movies={visibleMovies}
-          onOpen={onOpen}
-          loading={loading}
-          emptyTitle="No films found"
-          emptyText="Try a different search or genre."
-        />
-      </main>
-    );
-  }
+  const isSearching = Boolean(urlQuery.trim());
 
   return (
     <main className="cv-home">
       <section
         className="cv-featured-hero"
         style={
-          backdrop
+          featuredPoster
             ? {
-                backgroundImage: `linear-gradient(90deg,#050505 0%,rgba(5,5,5,.92) 27%,rgba(5,5,5,.35) 70%,rgba(5,5,5,.15) 100%),linear-gradient(0deg,#050505 0%,transparent 55%),url("${backdrop}")`,
+                backgroundImage: `linear-gradient(90deg,#050505 0%,rgba(5,5,5,.94) 30%,rgba(5,5,5,.45) 75%,rgba(5,5,5,.2) 100%),linear-gradient(0deg,#050505 0%,transparent 65%),url("${featuredPoster}")`,
               }
             : {}
         }
       >
         <div className="cv-hero-copy">
           <span className="cv-hero-kicker">
-            <Sparkles size={14} /> CINEVERSE ORIGINAL DISCOVERY
-          </span>
-          <span className="cv-feature-overline">
-            FEATURED MOVIE · {featured?.release_date?.slice(0, 4) || "NOW SHOWING"}
+            <Sparkles size={14} /> CINEVERSE MOVIE DISCOVERY
           </span>
 
-          <h1>{featured?.title || "Stories worth watching"}</h1>
+          <span className="cv-feature-overline">MOVIE SPOTLIGHT</span>
+
+          <h1>{featured?.title || "Your next story starts here."}</h1>
 
           <div className="cv-feature-meta">
             <span>
               <Star size={14} fill="currentColor" />
-              {Number(featured?.vote_average || 8.4).toFixed(1)} Rating
+              {featured?.vote_average
+                ? featured.vote_average.toFixed(1)
+                : "IMDb rating varies"}
             </span>
-            <span>HD</span>
-            <span>Movie</span>
+
+            <span>{featured?.year || "Discover"}</span>
+            <span>{featured?.type || "Movie"}</span>
           </div>
 
           <p>
             {featured?.overview ||
-              "Discover unforgettable stories, iconic characters, and your next favourite movie."}
+              "Discover movies across genres, explore new titles, and build your personal watchlist."}
           </p>
 
           <div className="cv-hero-buttons">
             <button
+              type="button"
               className="cv-button cv-button-red"
-              onClick={() => onOpen(featured)}
+              onClick={() => featured && openMovie(featured)}
+              disabled={!featured}
             >
               <Play size={16} fill="currentColor" /> View details
             </button>
+
             <Link className="cv-button cv-button-glass" to="/watchlist">
-              ＋ My List
+              + My List
             </Link>
           </div>
         </div>
 
         <div className="cv-hero-status">
-          <span />
-          YOUR NEXT MOVIE NIGHT STARTS HERE
+          <span /> MOVIE DATA POWERED BY OMDb
         </div>
       </section>
 
       <div className="cv-home-content page-shell">
+        <SearchSuggestions
+          initialValue={urlQuery}
+          onSearch={handleSearch}
+        />
+
         {error && <div className="notice">{error}</div>}
-        {loading && (
-          <div className="loading-line">
-            <span /> Finding films for you...
-          </div>
-        )}
 
         <div className="cv-shortcuts">
-          <Link to="/trending">
+          <a href="#live-collections">
             <TrendingUp size={20} />
-            <strong>Trending Now</strong>
-            <span>What's popular</span>
-          </Link>
-          <Link to="/discover">
-            <Flame size={20} />
-            <strong>Popular Movies</strong>
-            <span>Audience favourites</span>
-          </Link>
-          <Link to="/discover">
-            <Star size={20} />
-            <strong>Top Rated</strong>
-            <span>Highly rated films</span>
-          </Link>
+            <strong>Discover All</strong>
+            <span>Explore movie collections</span>
+          </a>
+
+          <a href="#genre-discovery">
+            <WandSparkles size={20} />
+            <strong>By Genre</strong>
+            <span>Find your kind of story</span>
+          </a>
+
           <Link to="/watchlist">
             <CalendarDays size={20} />
             <strong>My Watchlist</strong>
             <span>Save for later</span>
           </Link>
+
+          <a href="#movie-results">
+            <Flame size={20} />
+            <strong>Movie Search</strong>
+            <span>Search the OMDb catalogue</span>
+          </a>
         </div>
 
-        <MovieRail
-          title="Trending Now"
-          subtitle="THE MOVIES EVERYONE IS WATCHING"
-          icon={TrendingUp}
-          movies={allMovies.slice(0, 16)}
-          onOpen={onOpen}
-        />
+        {!isSearching && (
+          <div id="live-collections">
+            {categories.map((category) => (
+              <MovieRail
+                key={category.id}
+                title={collections[category.id]?.title || category.label}
+                subtitle="DISCOVER YOUR NEXT FAVOURITE"
+                icon={category.id === "popular" ? Flame : Sparkles}
+                movies={collections[category.id]?.movies || []}
+                onOpen={openMovie}
+              />
+            ))}
+          </div>
+        )}
 
-        <section className="cv-browse-section">
+        <section className="cv-browse-section" id="genre-discovery">
           <div className="cv-browse-heading">
             <div>
-              <span className="cv-rail-kicker">FIND YOUR NEXT FAVOURITE</span>
-              <h2>Discover Movies</h2>
+              <span className="cv-rail-kicker">PERSONALISED DISCOVERY</span>
+              <h2>Explore by genre</h2>
             </div>
-            <Link to="/discover">Browse all <ArrowRight size={15} /></Link>
+          </div>
+
+          <div className="cv-category-tabs">
+            {GENRES.map((item) => (
+              <button
+                type="button"
+                key={item}
+                className={selectedGenre === item ? "active" : ""}
+                onClick={() => setSelectedGenre(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {genreLoading && (
+            <div className="loading-line">
+              <span /> Finding {selectedGenre.toLowerCase()} movies...
+            </div>
+          )}
+
+          <MovieGrid
+            movies={genreMovies}
+            onOpen={openMovie}
+            loading={genreLoading}
+            emptyTitle="No suggestions available"
+            emptyText="Try another genre."
+          />
+        </section>
+
+        <section className="cv-browse-section" id="movie-results">
+          <div className="cv-browse-heading">
+            <div>
+              <span className="cv-rail-kicker">
+                {isSearching ? "SEARCH RESULTS" : "EXPLORE THE CATALOGUE"}
+              </span>
+
+              <h2>
+                {isSearching
+                  ? `Results for "${urlQuery}"`
+                  : "All suggested movies"}
+              </h2>
+            </div>
           </div>
 
           <div className="cv-category-tabs">
             {categories.map((item) => (
               <button
+                type="button"
                 key={item.id}
-                className={category === item.id ? "active" : ""}
+                className={activeCategory === item.id ? "active" : ""}
                 onClick={() => {
-                  setCategory(item.id);
+                  setActiveCategory(item.id);
                   setShowAll(false);
+
+                  if (urlQuery) {
+                    setSearchParams({});
+                  }
                 }}
               >
                 {item.label}
@@ -437,97 +507,86 @@ export default function Discover({ query = "", onOpen }) {
 
           <div className="cv-filter-row">
             <select
-              value={genre}
-              onChange={(event) => setGenre(event.target.value)}
-              aria-label="Filter by genre"
-            >
-              <option value="all">All genres</option>
-              {genres.map((item) => (
-                <option key={item.id} value={String(item.id)}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            <select
               value={sort}
               onChange={(event) => setSort(event.target.value)}
               aria-label="Sort movies"
             >
               <option value="popular">Default order</option>
-              <option value="rating">Highest rated</option>
-              <option value="newest">Newest first</option>
+              <option value="rating">Highest IMDb rating</option>
+              <option value="newest">Newest year first</option>
               <option value="az">A–Z</option>
             </select>
           </div>
 
-          <p className="cv-results-count">{visibleMovies.length} films to explore</p>
+          <p className="cv-results-count">
+            {visibleMovies.length} results in the current selection
+          </p>
+
+          {loading && (
+            <div className="loading-line">
+              <span /> Searching OMDb...
+            </div>
+          )}
 
           <MovieGrid
-            movies={showAll ? visibleMovies : visibleMovies.slice(0, 12)}
-            onOpen={onOpen}
+            movies={showAll ? visibleMovies : visibleMovies.slice(0, 24)}
+            onOpen={openMovie}
             loading={loading}
-            emptyTitle="No films found"
-            emptyText="Try another genre or category."
+            emptyTitle="No movies found"
+            emptyText="Try a different title or collection."
           />
 
-          {!loading && visibleMovies.length > 12 && !showAll && (
-            <button className="cv-show-more" onClick={() => setShowAll(true)}>
-              Show more films <ChevronRight size={16} />
+          {!loading && visibleMovies.length > 24 && !showAll && (
+            <button
+              type="button"
+              className="cv-show-more"
+              onClick={() => setShowAll(true)}
+            >
+              Show more movies <ChevronRight size={16} />
             </button>
           )}
         </section>
 
-        <MovieRail
-          title="Popular Movies"
-          subtitle="FAN FAVOURITES"
-          icon={Flame}
-          movies={allMovies.slice(2, 18)}
-          onOpen={onOpen}
-        />
-
-        <MovieRail
-          title="Harry Potter Collection"
-          subtitle="ENTER THE WIZARDING WORLD"
-          icon={WandSparkles}
-          movies={harryPotter}
-          onOpen={onOpen}
-        />
-
-        <MovieRail
-          title="Top Rated Picks"
-          subtitle="WORTH YOUR TIME"
-          icon={Star}
-          movies={topRated.slice(0, 16)}
-          onOpen={onOpen}
-        />
-
-        <MovieRail
-          title="Recently Released"
-          subtitle="FRESH FROM THE SCREEN"
-          icon={CalendarDays}
-          movies={newest.slice(0, 16)}
-          onOpen={onOpen}
-        />
+        {!isSearching && (
+          <MovieRail
+            title="The Wizarding World"
+            subtitle="MAGIC NEVER GETS OLD"
+            icon={WandSparkles}
+            movies={(collections.fantasy?.movies || []).filter((movie) =>
+              /harry potter|fantastic beasts/i.test(movie.title)
+            )}
+            onOpen={openMovie}
+          />
+        )}
 
         <section className="cv-home-promo">
           <div>
             <span className="cv-rail-kicker">
               <Sparkles size={14} /> YOUR PERSONAL CINEMA
             </span>
+
             <h2>Make it a movie night.</h2>
+
             <p>
-              Save films you love, track what you have watched, and keep your
-              next favourite close.
+              Discover new titles, save films you love, and keep your next
+              favourite close.
             </p>
+
             <Link to="/watchlist" className="cv-button cv-button-red">
               Open My List <ArrowRight size={16} />
             </Link>
           </div>
+
           <div className="cv-promo-logo">
             CINE<span>VERSE</span>
             <small>YOUR NEXT STORY STARTS HERE</small>
           </div>
         </section>
+
+        <p className="cv-attribution">
+          Movie data provided by OMDb API. Catalogue coverage depends on
+          the OMDb service and your API plan.
+        </p>
       </div>
     </main>
   );
